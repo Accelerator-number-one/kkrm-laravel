@@ -1,0 +1,15 @@
+@php $key=$field['key']; @endphp
+<div class="form-field {{ in_array($field['type'],['editor','textarea','rules','media','multi'])?'wide-field':'' }}">
+@if(!in_array($field['type'],['date','datetime']))<label for="field-{{ $key }}">{{ $field['label'] }}@if($field['required']??false)<span class="required-mark"> *</span>@endif</label>@endif
+@if($field['type']==='editor')@include('admin.editor',['editorKey'=>$key])
+@elseif($field['type']==='media')@include('admin.media-picker',['mediaKey'=>$key,'mediaAccept'=>$field['accept']??'image/*','mediaRequired'=>$field['required']??false])
+@elseif($field['type']==='boolean')<input id="field-{{ $key }}" type="checkbox" x-model="values.{{ $key }}">
+@elseif(in_array($field['type'],['ref','multi']))<select id="field-{{ $key }}" x-model="values.{{ $key }}" @if($field['type']==='multi') multiple @endif @if($field['required']??false) required @endif @if($resource==='menu-items'&&$key==='page_id') @change="choosePage()" @endif>@if($field['type']!=='multi')<option value="">انتخاب کنید</option>@endif<template x-for="entry in choices('{{ $field['source'] }}','{{ $key }}')" :key="entry.id"><option :value="String(entry.id)" x-text="title(entry)||entry.alt||entry.original_name"></option></template></select>@if($field['type']==='multi')<span class="field-hint">برای چند انتخاب، کلید ⌘ یا Ctrl را نگه دارید.</span>@endif
+@elseif($field['type']==='select')<select id="field-{{ $key }}" x-model="values.{{ $key }}" @if($field['required']??false) required @endif><option value="">انتخاب کنید</option>@foreach($field['options'] as $value=>$text)@if(!(auth()->user()->role->value==='editor'&&$key==='status'&&!in_array($value,['draft','review'])))<option value="{{ $value }}">{{ $text }}</option>@endif @endforeach</select>
+@elseif(in_array($field['type'],['date','datetime']))@include('admin.date-field',['dateKey'=>$key,'dateLabel'=>$field['label'],'withTime'=>$field['type']==='datetime','dateRequired'=>$field['required']??false])
+@elseif($field['type']==='rules')@include('admin.rules')
+@elseif($field['type']==='textarea')<textarea id="field-{{ $key }}" x-model="values.{{ $key }}" rows="4" maxlength="{{ $key==='internal_note'?5000:1000 }}" @if($field['required']??false) required @endif></textarea>
+@else<input id="field-{{ $key }}" type="{{ in_array($field['type'],['number','email','password'])?$field['type']:'text' }}" x-model="values.{{ $key }}" @input="changed('{{ $key }}')" @if(($field['required']??false)||(!$initial&&$resource==='users'&&$field['type']==='password')) required @endif @if($field['type']==='password') autocomplete="new-password" minlength="12" @else autocomplete="off" @endif @if($field['type']==='number') min="0" @endif maxlength="{{ $key==='slug'?180:2000 }}" @if($resource==='menu-items'&&$key==='url') :disabled="!!Number(values.page_id)" @endif>
+@endif
+@if(!empty($field['hint']))<span class="field-hint">{{ $field['hint'] }}</span>@endif<span class="field-error" x-text="Object.entries(errors).filter(([key])=>key==='{{ $key }}'||key.startsWith('{{ $key }}.')).flatMap(([,messages])=>messages).join('، ')"></span>
+</div>
